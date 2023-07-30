@@ -2,11 +2,14 @@
 extends EditorPlugin
 
 
+var importer: KNImporter
+
+
 func _enter_tree() -> void:
-	# Initialization of the plugin goes here.
-	pass
+	importer = KNImporter.new()
+	add_import_plugin(importer)
 
 
 func _exit_tree() -> void:
-	# Clean-up of the plugin goes here.
-	pass
+	remove_import_plugin(importer)
+	importer = null
