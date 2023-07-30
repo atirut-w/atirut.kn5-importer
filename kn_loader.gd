@@ -34,7 +34,6 @@ func load(path: String) -> Error:
 
         _file.seek(tex.offset + tex.size)
         textures.append(tex)
-        print("Texture: %s" % tex.name)
 
     return OK
 
