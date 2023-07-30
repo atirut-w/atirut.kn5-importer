@@ -56,6 +56,7 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 		return err
 	
 	var scene := _gen_node(loader.root_node)
+	_set_node_owners(scene, scene)
 	
 	var packed := PackedScene.new()
 	err = packed.pack(scene)
@@ -78,13 +79,29 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 			for child in original.children:
 				node.add_child(_gen_node(child))
 		2, 3:
-			print("Mesh: %s" % original.name)
+			var vertices := PackedVector3Array()
+
+			for index in original.indices:
+				vertices.push_back(original.positions[index])
+			
+			var mesh := ArrayMesh.new()
+			var arrays := []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = vertices
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+			var instance := MeshInstance3D.new()
+			instance.mesh = mesh
+			instance.name = "MESH_" + node.name
+			node.add_child(instance)
+
 
 	return node
 
 
 func _set_node_owners(node: Node3D, owner: Node3D) -> void:
-	node.owner = owner
+	if node != owner:
+		node.owner = owner
 
 	for child in node.get_children():
 		_set_node_owners(child, owner)
