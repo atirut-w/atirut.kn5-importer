@@ -81,8 +81,15 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 		2, 3:
 			var vertices := PackedVector3Array()
 
-			for index in original.indices:
-				vertices.push_back(original.positions[index])
+			for index in original.indices.size() / 3:
+				var i0 := original.indices[index * 3 + 0]
+				var i1 := original.indices[index * 3 + 1]
+				var i2 := original.indices[index * 3 + 2]
+
+				# Reverse the winding order
+				vertices.push_back(original.positions[i0])
+				vertices.push_back(original.positions[i2])
+				vertices.push_back(original.positions[i1])
 			
 			var mesh := ArrayMesh.new()
 			var arrays := []
