@@ -11,6 +11,7 @@ extends RefCounted
 
 var version: int
 var textures: Array[KNTexture]
+var materials: Array[KNMaterial]
 
 var _file: FileAccess
 
@@ -24,8 +25,7 @@ func load(path: String) -> Error:
         return ERR_FILE_UNRECOGNIZED
     version = _file.get_32()
 
-    var texture_count := _file.get_32()
-    for i in texture_count:
+    for i in _file.get_32(): # Textures
         var tex := KNTexture.new()
         tex.type = _file.get_32()
         tex.name = _get_p_string()
@@ -34,6 +34,33 @@ func load(path: String) -> Error:
 
         _file.seek(tex.offset + tex.size)
         textures.append(tex)
+    
+    for i in _file.get_32(): # Materials
+        var mat := KNMaterial.new()
+        mat.name = _get_p_string()
+        mat.shader = _get_p_string()
+
+        # The original loader just does this, I don't know what's skipped over,
+        # but it's not like there's an official docs for it. /shrug
+        _file.get_16()
+        if version > 4:
+            _file.get_32()
+        
+        for j in _file.get_32(): # Properties
+            var prop_name := _get_p_string()
+            var prop_value := _file.get_float()
+            mat.properties[prop_name] = prop_value
+
+            _file.seek(_file.get_position() + 36) # WHAT
+        
+        for j in _file.get_32(): # Textures
+            var sample_name := _get_p_string()
+            _file.get_32()
+            var tex_name := _get_p_string()
+
+            mat.textures[sample_name] = tex_name
+        
+        materials.append(mat)
 
     return OK
 
@@ -48,3 +75,10 @@ class KNTexture extends RefCounted:
     var name: String
     var size: int
     var offset: int
+
+
+class KNMaterial extends RefCounted:
+    var name: String
+    var shader: String
+    var properties: Dictionary
+    var textures: Dictionary
