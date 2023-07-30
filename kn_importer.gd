@@ -48,11 +48,20 @@ func _get_import_options(path: String, preset_index: int) -> Array:
 
 
 func _import(source_file: String, save_path: String, options: Dictionary, platform_variants: Array[String], gen_files: Array[String]) -> Error:
+	var err: Error = 0
+	
+	var loader := KNLoader.new()
+	err = loader.load(source_file)
+	if err != OK:
+		return err
+	
 	var scene := Node3D.new()
 
 	# TODO: Implement
 	
 	var packed := PackedScene.new()
-	packed.pack(scene)
+	err = packed.pack(scene)
+	if err != OK:
+		return err
 	
 	return ResourceSaver.save(packed, "%s.%s" % [save_path, _get_save_extension()])
