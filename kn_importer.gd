@@ -101,16 +101,16 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 				uvs.push_back(original.uvs[i2])
 				uvs.push_back(original.uvs[i1])
 			
-			var mesh := ArrayMesh.new()
+			var imesh := ImporterMesh.new()
 			var arrays := []
 			arrays.resize(Mesh.ARRAY_MAX)
 			arrays[Mesh.ARRAY_VERTEX] = vertices
 			arrays[Mesh.ARRAY_NORMAL] = normals
 			arrays[Mesh.ARRAY_TEX_UV] = uvs
-			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			imesh.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
 			var instance := MeshInstance3D.new()
-			instance.mesh = mesh
+			instance.mesh = imesh.get_mesh()
 			instance.name = "MESH_" + node.name
 			node.add_child(instance)
 
