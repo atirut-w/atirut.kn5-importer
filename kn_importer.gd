@@ -55,9 +55,7 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	if err != OK:
 		return err
 	
-	var scene := Node3D.new()
-
-	# TODO: Implement
+	var scene := _gen_node(loader.root_node)
 	
 	var packed := PackedScene.new()
 	err = packed.pack(scene)
@@ -65,3 +63,28 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 		return err
 	
 	return ResourceSaver.save(packed, "%s.%s" % [save_path, _get_save_extension()])
+
+
+func _gen_node(original: KNLoader.KNNode) -> Node3D:
+	var node := Node3D.new()
+	node.name = original.name
+
+	match original.type:
+		1:
+			node.position = original.translation
+			node.rotation_degrees = original.rotation
+			node.scale = original.scale
+
+			for child in original.children:
+				node.add_child(_gen_node(child))
+		2, 3:
+			print("Mesh: %s" % original.name)
+
+	return node
+
+
+func _set_node_owners(node: Node3D, owner: Node3D) -> void:
+	node.owner = owner
+
+	for child in node.get_children():
+		_set_node_owners(child, owner)
