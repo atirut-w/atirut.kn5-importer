@@ -80,6 +80,7 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 				node.add_child(_gen_node(child))
 		2, 3:
 			var vertices := PackedVector3Array()
+			var normals := PackedVector3Array()
 
 			for index in original.indices.size() / 3:
 				var i0 := original.indices[index * 3 + 0]
@@ -90,11 +91,16 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 				vertices.push_back(original.positions[i0])
 				vertices.push_back(original.positions[i2])
 				vertices.push_back(original.positions[i1])
+
+				normals.push_back(original.normals[i0])
+				normals.push_back(original.normals[i2])
+				normals.push_back(original.normals[i1])
 			
 			var mesh := ArrayMesh.new()
 			var arrays := []
 			arrays.resize(Mesh.ARRAY_MAX)
 			arrays[Mesh.ARRAY_VERTEX] = vertices
+			arrays[Mesh.ARRAY_NORMAL] = normals
 			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
 			var instance := MeshInstance3D.new()
