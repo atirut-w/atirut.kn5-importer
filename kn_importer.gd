@@ -55,7 +55,7 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	if err != OK:
 		return err
 	
-	var scene := _gen_node(loader.root_node)
+	var scene := _gen_node(loader)
 	_set_node_owners(scene, scene)
 	
 	var packed := PackedScene.new()
@@ -66,7 +66,10 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	return ResourceSaver.save(packed, "%s.%s" % [save_path, _get_save_extension()])
 
 
-func _gen_node(original: KNLoader.KNNode) -> Node3D:
+func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
+	if original == null:
+		original = loader.root_node
+
 	var node := Node3D.new()
 	node.name = original.name
 
@@ -77,7 +80,7 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 			node.scale = original.scale
 
 			for child in original.children:
-				node.add_child(_gen_node(child))
+				node.add_child(_gen_node(loader, child))
 		2, 3:
 			var vertices := PackedVector3Array()
 			var normals := PackedVector3Array()
@@ -108,6 +111,16 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 			arrays[Mesh.ARRAY_NORMAL] = normals
 			arrays[Mesh.ARRAY_TEX_UV] = uvs
 			imesh.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+			var kmat := loader.materials[original.material_id]
+			var mat := StandardMaterial3D.new()
+			if "txDiffuse" in kmat.textures:
+				var tex: KNLoader.KNTexture
+				for t in loader.textures:
+					if t.name == kmat.textures["txDiffuse"]:
+						tex = t
+						print(tex.name)
+						break
 
 			var instance := MeshInstance3D.new()
 			instance.mesh = imesh.get_mesh()
