@@ -119,7 +119,6 @@ func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
 				for t in loader.textures:
 					if t.name == kmat.textures["txDiffuse"]:
 						tex = t
-						print(tex.name)
 						break
 
 			var instance := MeshInstance3D.new()
