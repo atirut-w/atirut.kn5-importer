@@ -55,6 +55,19 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	if err != OK:
 		return err
 	
+	# Make sure textures are extracted
+	var base_path := source_file.get_base_dir()
+	for tex in loader.textures:
+		if not FileAccess.file_exists("%s/%s" % [base_path, tex.name]):
+			# Extract the texture
+			var s_file := FileAccess.open(source_file, FileAccess.READ)
+			s_file.seek(tex.offset)
+			var o_file := FileAccess.open("%s/%s" % [base_path, tex.name], FileAccess.WRITE)
+			o_file.store_buffer(s_file.get_buffer(tex.size))
+
+			gen_files.push_back("%s/%s" % [base_path, tex.name]) # TODO: Make sure textures are imported first
+	
+	
 	var scene := _gen_node(loader)
 	_set_node_owners(scene, scene)
 	
@@ -115,11 +128,10 @@ func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
 			var kmat := loader.materials[original.material_id]
 			var mat := StandardMaterial3D.new()
 			if "txDiffuse" in kmat.textures:
-				var tex: KNLoader.KNTexture
-				for t in loader.textures:
-					if t.name == kmat.textures["txDiffuse"]:
-						tex = t
-						break
+				var tex := _find_texture(loader, kmat.textures["txDiffuse"])
+				mat.albedo_texture = load("%s/%s" % [loader.base_dir, tex.name])
+			
+			imesh.set_surface_material(0, mat)
 
 			var instance := MeshInstance3D.new()
 			instance.mesh = imesh.get_mesh()
@@ -128,6 +140,14 @@ func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
 
 
 	return node
+
+
+func _find_texture(loader: KNLoader, name: String) -> KNLoader.KNTexture:
+	for tex in loader.textures:
+		if tex.name == name:
+			return tex
+	
+	return null
 
 
 func _set_node_owners(node: Node3D, owner: Node3D) -> void:
