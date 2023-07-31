@@ -9,8 +9,6 @@ extends RefCounted
 ## very readable and easy to understand.
 
 
-var base_path: String
-
 var version: int
 var textures: Array[KNTexture]
 var materials: Array[KNMaterial]
@@ -23,7 +21,6 @@ func load(path: String) -> Error:
 	_file = FileAccess.open(path, FileAccess.READ)
 	if _file == null:
 		return FileAccess.get_open_error()
-	base_path = path.get_base_dir()
 
 	if _file.get_buffer(6).get_string_from_ascii() != "sc6969": # Nice
 		return ERR_FILE_UNRECOGNIZED
