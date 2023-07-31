@@ -127,9 +127,16 @@ func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
 
 			var kmat := loader.materials[original.material_id]
 			var mat := StandardMaterial3D.new()
+
+			mat.roughness = 1.0 - kmat.properties["ksSpecular"]
+
 			if "txDiffuse" in kmat.textures:
 				var tex := _find_texture(loader, kmat.textures["txDiffuse"])
 				mat.albedo_texture = load("%s/%s" % [loader.base_dir, tex.name])
+			if "txNormal" in kmat.textures:
+				var tex := _find_texture(loader, kmat.textures["txNormal"])
+				mat.normal_enabled = true
+				mat.normal_texture = load("%s/%s" % [loader.base_dir, tex.name])
 			
 			imesh.set_surface_material(0, mat)
 
