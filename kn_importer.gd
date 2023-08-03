@@ -55,7 +55,20 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	if err != OK:
 		return err
 	
-	var scene := _gen_node(loader.root_node)
+	# Make sure textures are extracted
+	var base_path := source_file.get_base_dir()
+	for tex in loader.textures:
+		if not FileAccess.file_exists("%s/%s" % [base_path, tex.name]):
+			# Extract the texture
+			var s_file := FileAccess.open(source_file, FileAccess.READ)
+			s_file.seek(tex.offset)
+			var o_file := FileAccess.open("%s/%s" % [base_path, tex.name], FileAccess.WRITE)
+			o_file.store_buffer(s_file.get_buffer(tex.size))
+
+			gen_files.push_back("%s/%s" % [base_path, tex.name]) # TODO: Make sure textures are imported first
+	
+	
+	var scene := _gen_node(loader)
 	_set_node_owners(scene, scene)
 	
 	var packed := PackedScene.new()
@@ -66,7 +79,10 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
 	return ResourceSaver.save(packed, "%s.%s" % [save_path, _get_save_extension()])
 
 
-func _gen_node(original: KNLoader.KNNode) -> Node3D:
+func _gen_node(loader: KNLoader, original: KNLoader.KNNode = null) -> Node3D:
+	if original == null:
+		original = loader.root_node
+
 	var node := Node3D.new()
 	node.name = original.name
 
@@ -77,7 +93,7 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 			node.scale = original.scale
 
 			for child in original.children:
-				node.add_child(_gen_node(child))
+				node.add_child(_gen_node(loader, child))
 		2, 3:
 			var vertices := PackedVector3Array()
 			var normals := PackedVector3Array()
@@ -109,6 +125,21 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 			arrays[Mesh.ARRAY_TEX_UV] = uvs
 			imesh.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
+			var kmat := loader.materials[original.material_id]
+			var mat := StandardMaterial3D.new()
+
+			mat.roughness = 1.0 - kmat.properties["ksSpecular"]
+
+			if "txDiffuse" in kmat.textures:
+				var tex := _find_texture(loader, kmat.textures["txDiffuse"])
+				mat.albedo_texture = load("%s/%s" % [loader.base_dir, tex.name])
+			if "txNormal" in kmat.textures:
+				var tex := _find_texture(loader, kmat.textures["txNormal"])
+				mat.normal_enabled = true
+				mat.normal_texture = load("%s/%s" % [loader.base_dir, tex.name])
+			
+			imesh.set_surface_material(0, mat)
+
 			var instance := MeshInstance3D.new()
 			instance.mesh = imesh.get_mesh()
 			instance.name = "MESH_" + node.name
@@ -116,6 +147,14 @@ func _gen_node(original: KNLoader.KNNode) -> Node3D:
 
 
 	return node
+
+
+func _find_texture(loader: KNLoader, name: String) -> KNLoader.KNTexture:
+	for tex in loader.textures:
+		if tex.name == name:
+			return tex
+	
+	return null
 
 
 func _set_node_owners(node: Node3D, owner: Node3D) -> void:
